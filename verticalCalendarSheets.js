@@ -28,25 +28,29 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   // Or DocumentApp or FormApp.
   ui.createMenu('Custom Menu')
-    .addItem('test', 'test')
+    .addItem('iniciar', 'init')
+    
 
     .addToUi();
 }
 
 
 
-function test() {
+function init() {
 
-  let yearInit = 2020
-  let yearFinally = 2022
+  let yearInit = 2019
+  let yearFinally = 2026
   let deltaYear = (yearFinally - yearInit)
 
-  let row = 1;
+  const iniRow = 7;
+  let row = iniRow;
   let initYearRow = row
 
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-  sheet.autoResizeColumn(4);
+  //sheet.autoResizeColumn(4);
+
+
 
   const date = new Date(yearInit, 0, 1);
 
@@ -54,13 +58,19 @@ function test() {
 
     row = showForYear(sheet, date, row);
     //Logger.log(initYearRow + " : " + (row-initYearRow) )
-    mergeCell(sheet, [initYearRow, 1, (row-initYearRow), 1]);
-    initYearRow= row
+    mergeCell(sheet, [initYearRow, 1, (row - initYearRow), 1]);
+    createGroups(sheet, [initYearRow, 1, (row - initYearRow)-1, 1], 1);
+    initYearRow = row
 
   }
+
+  sheet.getRange(1, 1, 2, 3).setValues([["Rows", "Cols", "init"], [row, 6, iniRow]]);
+
+  sheet.getRange(iniRow - 1, 1, 1, 6).setValues([["Year", "nYear", "Month", "nMonth", "Day", "Date"]]);
+
+
+
 }
-
-
 
 function showForYear(sheet, date, row) {
   let initRow = row;
@@ -68,11 +78,10 @@ function showForYear(sheet, date, row) {
     row = showForMonth(sheet, date, row);
     //Logger.log(initRow + " : " + (row-initRow) )
 
-    mergeCell(sheet, [initRow, 3, (row-initRow), 1]);
-    mergeCell(sheet, [initRow, 2, (row-initRow), 1]);
+    mergeCell(sheet, [initRow, 3, (row - initRow), 1]);
+    mergeCell(sheet, [initRow, 2, (row - initRow), 1]);
+    createGroups(sheet, [initRow, 2, (row - initRow)-1, 1], 1);
     initRow = row;
-
-
 
   }
   return row;
@@ -104,7 +113,16 @@ function showForMonth(sheet, date, row) {
         date.getDate());
 
       if (isNextWeek(dayCurrent + 1)) {
-        mergeCell(sheet, [(row - countWeek) + 1, 4, countWeek, 1]);
+        row++;
+        showIndexGrps(
+          sheet.getRange(row, 1, 1, 6),
+          date.getFullYear(),
+          date.getMonth(),
+          nWeekMonth)
+
+
+        mergeCell(sheet, [(row - countWeek), 4, countWeek + 1, 1]);
+        createGroups(sheet, [(row - countWeek), 4, countWeek , 1],1);
 
         nWeekMonth++;
         countWeek = 0;
@@ -112,12 +130,29 @@ function showForMonth(sheet, date, row) {
 
     } else {
       //Logger.log((row-countWeek)+":"+countWeek + "->"+ nWeekMonth)
-      if (countWeek != 0) mergeCell(sheet, [(row - countWeek), 4, countWeek, 1]);
+      if (countWeek != 0) {
+
+        mergeCell(sheet, [(row - countWeek), 4, countWeek + 1, 1]);
+        createGroups(sheet, [(row - countWeek), 4, countWeek, 1], 1)
+        row++;
+        showIndexGrps(
+          sheet.getRange(row, 1, 1, 6),
+          date.getFullYear(),
+          date.getMonth(),
+          nWeekMonth)
+      } else {
+        showIndexGrps(
+          sheet.getRange(row, 1, 1, 6),
+          date.getFullYear(),
+          date.getMonth(),
+          nWeekMonth)
+      }
 
       nWeekMonth = 1;
       break;
 
     }
+
 
     // New day----
     date.setDate(date.getDate() + 1);
@@ -129,12 +164,6 @@ function showForMonth(sheet, date, row) {
   return row;
 }
 
-// function sizesCell(sheet){
-//   sheet.
-
-// }
-
-
 
 function isNextMonth(currentMonth, date) {
   return currentMonth != date.getMonth()
@@ -142,6 +171,17 @@ function isNextMonth(currentMonth, date) {
 
 function isNextWeek(dayCurrent) {
   return dayCurrent % 7 == 0 && dayCurrent != 0;
+}
+
+function createGroups(sheet, arr, index=-1){
+  sheet.getRange(arr[0], arr[1], arr[2], arr[3]).shiftRowGroupDepth(index);
+
+}
+
+
+function showIndexGrps(cells, yearCurrent, monthCurrent, countWeekForMonth) {
+  const currentValues = [[yearCurrent, (monthCurrent + 1), monthNumberToText(monthCurrent), countWeekForMonth, undefined, undefined]];
+  cells.setValues(currentValues);
 }
 
 function mergeCell(sheet, arr) {
@@ -152,6 +192,7 @@ function showValues(cells, yearCurrent, monthCurrent, countWeekForMonth, dayCurr
   const currentValues = [[yearCurrent, (monthCurrent + 1), monthNumberToText(monthCurrent), countWeekForMonth, dayToText(dayCurrent), dateCurrent]];
   cells.setValues(currentValues);
 }
+
 
 function monthNumberToText(n) {
   return monthText.get(n);
